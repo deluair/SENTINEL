@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: sentinel_postgres
+    environment:
+      POSTGRES_DB: sentinel_db
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinel_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sentinel_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # SENTINEL API
+  sentinel_api:
+    build: .
+    container_name: sentinel_api
+    environment:
+      - DATABASE_URL=postgresql://sentinel:password@postgres:5432/sentinel_db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: ["python", "api/main.py"]
+
+  # SENTINEL Dashboard
+  sentinel_dashboard:
+    build: .
+    container_name: sentinel_dashboard
+    environment:
+      - DATABASE_URL=postgresql://sentinel:password@postgres:5432/sentinel_db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=true
+    ports:
+      - "8050:8050"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: ["python", "dashboard/app.py"]
+
+volumes:
+  postgres_data:
+  redis_data: 
