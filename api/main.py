@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import text, func
 from typing import List, Optional, Dict, Any
 import logging
 from datetime import datetime, timedelta
@@ -14,6 +15,7 @@ from datetime import datetime, timedelta
 from config.settings import settings
 from models.database_connection import get_db
 from models.risk_scoring import i_score_engine
+from models.database import Country, Supplier, Product, TradeRoute, Company, RiskEvent, SupplierProduct
 from api.routers import countries, suppliers, products, trade_routes, companies, risk_events, analytics
 
 # Configure logging
@@ -63,7 +65,7 @@ async def health_check():
     try:
         # Test database connection
         db = next(get_db())
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         
         return {
             "status": "healthy",
@@ -153,7 +155,7 @@ async def get_supply_chain_risk(
             db.query(SupplierProduct.supplier_id).distinct()
         )).all()
         
-        routes = db.query(TradeRoute).filter(TradeRoute.is_active == True).all()
+        routes = db.query(TradeRoute).filter(TradeRoute.is_active.is_(True)).all()
         products = db.query(Product).all()
         
         # Calculate supply chain risk
@@ -198,7 +200,7 @@ async def get_risk_alerts(
 ):
     """Get active risk alerts"""
     try:
-        query = db.query(RiskEvent).filter(RiskEvent.is_active == True)
+        query = db.query(RiskEvent).filter(RiskEvent.is_active.is_(True))
         
         if severity_min:
             query = query.filter(RiskEvent.severity >= severity_min)
@@ -242,11 +244,11 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
     try:
         # Get counts
         total_countries = db.query(Country).count()
-        total_suppliers = db.query(Supplier).filter(Supplier.is_active == True).count()
+        total_suppliers = db.query(Supplier).filter(Supplier.is_active.is_(True)).count()
         total_products = db.query(Product).count()
-        total_routes = db.query(TradeRoute).filter(TradeRoute.is_active == True).count()
+        total_routes = db.query(TradeRoute).filter(TradeRoute.is_active.is_(True)).count()
         total_companies = db.query(Company).count()
-        active_events = db.query(RiskEvent).filter(RiskEvent.is_active == True).count()
+        active_events = db.query(RiskEvent).filter(RiskEvent.is_active.is_(True)).count()
         
         # Get average risk scores
         avg_country_risk = db.query(func.avg(Country.risk_score)).scalar() or 0

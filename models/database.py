@@ -33,7 +33,7 @@ class Country(Base):
     
     # Relationships
     suppliers = relationship("Supplier", back_populates="country")
-    trade_routes = relationship("TradeRoute", back_populates="origin_country")
+    trade_routes = relationship("TradeRoute", foreign_keys="[TradeRoute.origin_country_id]", back_populates="origin_country")
     risk_events = relationship("RiskEvent", back_populates="country")
 
 class Supplier(Base):
@@ -59,7 +59,7 @@ class Supplier(Base):
     # Relationships
     country = relationship("Country", back_populates="suppliers")
     products = relationship("SupplierProduct", back_populates="supplier")
-    relationships = relationship("SupplierRelationship", back_populates="supplier")
+    relationships = relationship("SupplierRelationship", foreign_keys="[SupplierRelationship.supplier_id]", back_populates="supplier")
 
 class Product(Base):
     """Product information and commodity data"""
@@ -117,7 +117,7 @@ class TradeRoute(Base):
     is_active = Column(Boolean, default=True)
     
     # Relationships
-    origin_country = relationship("Country", back_populates="trade_routes")
+    origin_country = relationship("Country", foreign_keys=[origin_country_id], back_populates="trade_routes")
     trade_flows = relationship("TradeFlow", back_populates="route")
 
 class TradeFlow(Base):
@@ -147,6 +147,9 @@ class SupplierRelationship(Base):
     relationship_type = Column(String(50))  # parent, subsidiary, partner
     dependency_level = Column(Float, default=0.0)
     created_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    supplier = relationship("Supplier", foreign_keys=[supplier_id], back_populates="relationships")
 
 class RiskEvent(Base):
     """Risk events and incidents"""

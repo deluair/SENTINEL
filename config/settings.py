@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Database
-    DATABASE_URL: str = "postgresql://sentinel:password@localhost:5432/sentinel_db"
+    DATABASE_URL: str = "sqlite:///./data/sentinel.db"
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # API
@@ -54,11 +54,11 @@ class Settings(BaseSettings):
     
     # Data Generation
     SYNTHETIC_DATA_SIZE: Dict[str, int] = {
-        "countries": 195,
-        "suppliers": 500000,
-        "trade_routes": 850,
-        "products": 2800,
-        "companies": 500
+        "countries": 50,
+        "suppliers": 1000,
+        "trade_routes": 100,
+        "products": 200,
+        "companies": 100
     }
     
     # Monitoring
